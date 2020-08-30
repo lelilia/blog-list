@@ -35,8 +35,20 @@ const usersInDb = async () => {
   const users = await User.find({})
   return users.map(user => user.toJSON())
 }
+
+const nonExistingId = async () => {
+  const blog = new Blog({ title: 'will soon be romoved', author: 'noone' })
+  await blog.save()
+  await blog.remove()
+
+  return blog._id.toString()
+}
+
+
+
 module.exports = {
   initialBlogs,
   blogsInDb,
-  usersInDb
+  usersInDb,
+  nonExistingId
 }

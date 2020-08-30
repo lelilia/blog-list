@@ -21,7 +21,7 @@ mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology
     logger.error('error connection to MondoDB:', error.message)
   })
 
-//app.use(middleware.tokenExtractor)
+app.use(middleware.tokenExtractor)
 app.use(cors())
 app.use(express.static('build'))
 app.use(express.json())

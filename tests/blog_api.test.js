@@ -7,7 +7,6 @@ const api = supertest(app)
 
 const Blog = require('../models/blog')
 const User = require('../models/user')
-const usersRouter = require('../controllers/users')
 
 
 beforeEach(async () => {
@@ -88,7 +87,7 @@ describe('add new blogs', () => {
       title: 'new blog',
       author: 'by some author'
     }
-    const response = await api
+    await api
       .post('/api/blogs')
       .send(newBlog)
       .expect(401)
@@ -102,7 +101,7 @@ describe('add new blogs', () => {
     const newBlog = {
       title: 'new blog'
     }
-    const response = await api
+    await api
       .post('/api/blogs')
       .set('Authorization', `bearer ${token}`)
       .send(newBlog)
@@ -115,10 +114,12 @@ describe('add new blogs', () => {
 })
 
 
+
+
 describe('testing deletion', () => {
   let blogId
   beforeEach(async () => {
-    newBlog = {
+    const newBlog = {
       title: 'to be deleted',
       author: 'someone'
     }
@@ -132,7 +133,7 @@ describe('testing deletion', () => {
   test('sucess if valid id and token', async () => {
     const blogsAtStart = await helper.blogsInDb()
 
-    console.log(await Blog.findById(blogId))
+    const blogToDelete = await Blog.findById(blogId)
 
     await api
       .delete(`/api/blogs/${blogId}`)
@@ -146,50 +147,61 @@ describe('testing deletion', () => {
 
     expect(titles).not.toContain(blogToDelete.title)
   })
-})
 
-/*
-describe('testing updating', () => {
-  test('update valid blog with likes', async () => {
+  test('fails if token is missing', async () => {
     const blogsAtStart = await helper.blogsInDb()
-    const blogToUpdate = blogsAtStart[1]
-    const updatedLikes = { likes: 100 }
+
+    const blogToDelete = await Blog.findById(blogId)
 
     await api
-      .put(`/api/blogs/${blogToUpdate.id}`)
-      .send(updatedLikes)
-      .expect(200)
-      .expect('Content-Type', /application\/json/)
+      .delete(`/api/blogs/${blogId}`)
+      .expect(401)
 
     const blogsAtEnd = await helper.blogsInDb()
+    expect(blogsAtEnd).toHaveLength(blogsAtStart.length)
 
-    expect(blogsAtEnd[1].likes).toEqual(updatedLikes.likes)
+    const titles = blogsAtEnd.map(blog => blog.title)
+
+    expect(titles).toContain(blogToDelete.title)
   })
-*/
-/*
-  test('update valid blog without initial likes', async () => {
+})
+describe('testing updating', () => {
+  let blogId
+  beforeEach(async () => {
     const newBlog = {
-      title: 'some title',
-      author: 'some old white man'
+      title: 'to be deleted',
+      author: 'someone'
     }
     const response = await api
       .post('/api/blogs')
+      .set('Authorization', `bearer ${token}`)
       .send(newBlog)
-
-    const updatedLikes = { likes: 100 }
+      .expect(201)
+    blogId = response.body.id
+  })
+  test('suceeds with valid ID', async () => {
+    const blogToUpdate = await Blog.findById(blogId)
+    blogToUpdate.likes = 1111
 
     await api
-      .put(`/api/blogs/${response.body.id}`)
-      .send(updatedLikes)
+      .put(`/api/blogs/${blogId}`)
+      .send(blogToUpdate)
       .expect(200)
       .expect('Content-Type', /application\/json/)
-    const blogsAtEnd = await helper.blogsInDb()
 
-    expect(blogsAtEnd[blogsAtEnd.length - 1].likes).toBe(updatedLikes.likes)
+    const updatedBlog = await Blog.findById(blogId)
+    expect(updatedBlog.likes).toBe(blogToUpdate.likes)
   })
+  test('fails with invalid id', async () => {
+    const invalidId = await helper.nonExistingId()
+    
+    await api
+      .put(`/api/blogs/${invalidId}`)
+      .send({ likes: 100 })
+      .expect(200)
+  })
+  
 })
-
-*/
 
 
 
